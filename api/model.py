@@ -18,29 +18,41 @@ model = tf.keras.models.load_model(MODEL_PATH)
 
 
 def predict_disease(image):
-    # Convert image to RGB
+
+    # Step 1: Convert image to RGB
     image = image.convert("RGB")
 
-    # Resize image according to model input
+    # Step 2: Resize image
     image = image.resize(IMG_SIZE)
 
-    # Convert image into NumPy array
+    # Step 3: Convert image into NumPy array
     image_array = np.array(image, dtype=np.float32)
 
-    # Add batch dimension
+    # Step 4: Add batch dimension
     image_array = np.expand_dims(image_array, axis=0)
 
-    # CNN prediction
-    predictions = model.predict(image_array)
+    # Step 5: CNN prediction
+    predictions = model.predict(image_array, verbose=0)
 
-    # Find predicted class
-    predicted_index = int(np.argmax(predictions[0]))
+    # Step 6: Get scores for all three classes
+    scores = predictions[0]
+
+    all_scores = {
+        CLASS_NAMES[i]: float(scores[i])
+        for i in range(len(CLASS_NAMES))
+    }
+
+    # Step 7: Find highest scoring class
+    predicted_index = int(np.argmax(scores))
 
     predicted_class = CLASS_NAMES[predicted_index]
 
-    confidence = float(predictions[0][predicted_index])
+    # Step 8: Get confidence score
+    confidence = float(scores[predicted_index])
 
+    # Step 9: Return prediction and all scores
     return {
         "predicted_class": predicted_class,
-        "confidence": confidence
+        "confidence": confidence,
+        "all_scores": all_scores
     }

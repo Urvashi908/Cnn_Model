@@ -9,7 +9,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# Custom styling
+# Page styling
 st.markdown("""
 <style>
 .main-title {
@@ -22,15 +22,10 @@ st.markdown("""
     color: gray;
     margin-bottom: 25px;
 }
-.result-card {
-    padding: 22px;
-    border-radius: 15px;
-    border: 1px solid #dddddd;
-    margin-top: 15px;
-}
 </style>
 """, unsafe_allow_html=True)
 
+# Page heading
 st.markdown(
     '<div class="main-title">🥔 Potato Leaf Health Check</div>',
     unsafe_allow_html=True
@@ -43,35 +38,34 @@ st.markdown(
 
 st.write("Upload a potato leaf image to check its health.")
 
+# Upload image
 uploaded_file = st.file_uploader(
     "Choose a potato leaf image",
     type=["jpg", "jpeg", "png"]
 )
 
-# Convert technical class names into user-friendly names
+# Friendly disease names
 disease_info = {
     "Potato___Early_blight": {
         "name": "Early Blight Detected",
         "emoji": "⚠️",
-        "message": "The model detected signs associated with Early Blight.",
-        "color": "orange"
+        "message": "The model predicted signs associated with Early Blight."
     },
     "Potato___Late_blight": {
         "name": "Late Blight Detected",
         "emoji": "🚨",
-        "message": "The model detected signs associated with Late Blight.",
-        "color": "red"
+        "message": "The model predicted signs associated with Late Blight."
     },
     "Potato___healthy": {
         "name": "Healthy Potato Leaf",
         "emoji": "🌿",
-        "message": "Great! Your potato leaf appears healthy based on the model's prediction.",
-        "color": "green"
+        "message": "The model predicted that this potato leaf is healthy."
     }
 }
 
 if uploaded_file is not None:
 
+    # Display uploaded image
     image = Image.open(uploaded_file).convert("RGB")
 
     st.image(
@@ -87,6 +81,7 @@ if uploaded_file is not None:
             try:
                 uploaded_file.seek(0)
 
+                # Send image to FastAPI backend
                 response = requests.post(
                     "http://127.0.0.1:8000/predict",
                     files={
@@ -100,61 +95,82 @@ if uploaded_file is not None:
                 )
 
                 response.raise_for_status()
+
+                # Get backend response
                 result = response.json()
 
                 disease = result["predicted_class"]
                 confidence = float(result["confidence"])
+                all_scores = result["all_scores"]
 
-                # Convert confidence into percentage
-                confidence_percent = confidence * 100
-
-                # Get friendly result details
+                # Display final prediction
                 info = disease_info.get(disease)
 
+                st.divider()
+                st.subheader("📋 Analysis Result")
+
                 if info is None:
-                    st.error("Unknown disease class returned by the model.")
+                    st.error("Unknown disease class returned by model.")
+
                 else:
-
-                    st.divider()
-
-                    st.subheader("📋 Analysis Result")
 
                     if disease == "Potato___healthy":
                         st.success(
                             f"{info['emoji']} {info['name']}"
                         )
+
                     elif disease == "Potato___Early_blight":
                         st.warning(
                             f"{info['emoji']} {info['name']}"
                         )
+
                     else:
                         st.error(
                             f"{info['emoji']} {info['name']}"
                         )
 
-                    st.markdown(
-                        f"### {info['message']}"
-                    )
+                    st.markdown(f"### {info['message']}")
 
-                    # Confidence score
-                    st.markdown("#### 🎯 Model Confidence")
+                    # Display confidence
+                    st.subheader("🎯 Model Confidence")
+
+                    confidence_percent = confidence * 100
 
                     st.progress(
                         max(0.0, min(confidence, 1.0))
                     )
 
                     st.metric(
-                        label="Confidence Score",
+                        label="Predicted Class Confidence",
                         value=f"{confidence_percent:.2f}%"
                     )
 
-                    st.caption(
-                        "Note: Confidence is the model's prediction score, "
-                        "not a guarantee of disease diagnosis."
+                # Display all three class scores
+                st.divider()
+                st.subheader("📊 All Disease Prediction Scores")
+
+                for class_name, score in all_scores.items():
+
+                    display_name = disease_info[class_name]["name"]
+
+                    score = float(score)
+                    score_percent = score * 100
+
+                    st.write(f"**{display_name}**")
+
+                    st.progress(
+                        max(0.0, min(score, 1.0))
                     )
 
+                    st.write(f"Score: {score_percent:.2f}%")
+
+                st.caption(
+                    "These are model prediction scores, not guaranteed "
+                    "diagnoses or proof of the actual disease."
+                )
+
             except requests.exceptions.RequestException as e:
-                st.error(f"Could not connect to the backend: {e}")
+                st.error(f"Could not connect to backend: {e}")
 
             except Exception as e:
                 st.error(f"Something went wrong: {e}")

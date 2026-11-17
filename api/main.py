@@ -19,11 +19,16 @@ def home():
 async def predict(file: UploadFile = File(...)):
 
     try:
+        # Read uploaded image
         image_bytes = await file.read()
+
+        # Open image
         image = Image.open(BytesIO(image_bytes))
 
+        # Get prediction from CNN model
         result = predict_disease(image)
 
+        # Return result to frontend
         return result
 
     except Exception as e:
