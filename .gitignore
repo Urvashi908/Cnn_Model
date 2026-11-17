@@ -1,6 +1,7 @@
 # Python environment
 .venv/
 venv/
+token.txt
 
 # Python cache
 __pycache__/
