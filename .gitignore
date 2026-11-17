@@ -1,0 +1,22 @@
+# Python environment
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Dataset
+dataset/
+data/
+
+# Model files
+*.keras
+*.h5
+
+# Temporary files
+*.log
+.DS_Store
